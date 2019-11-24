@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # In[1]:
-
+# Vidoe link : https://www.youtube.com/watch?v=PcfCEt5GdLY&list=PLPOTBrypY74wOpTIWQhqNdfV5gIt1h1fa&index=15
 
 import numpy as np
 
