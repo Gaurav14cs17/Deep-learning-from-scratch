@@ -110,11 +110,13 @@ def derivated_cross_entropy(pred , target ):
 
 class SimpleNetwork:
     
-    def __init__(self, num_inputs, num_outputs, hidden_layers_sizes=(64, 32),
+    def __init__(self, num_inputs, num_outputs, hidden_layers_sizes=(64, 32 , 16),
                  activation_function=sigmoid, derivated_activation_function=derivated_sigmoid,
                  loss_function=loss_L2, derivated_loss_function=derivated_loss_L2):
         super().__init__()
         layer_sizes = [num_inputs, *hidden_layers_sizes, num_outputs]
+        print("All layer node in FCN")
+        print(layer_sizes)
         self.layers = [
             FullyConnectedLayer(layer_sizes[i], layer_sizes[i + 1], activation_function, derivated_activation_function)
             for i in range(len(layer_sizes) - 1)]
@@ -263,7 +265,7 @@ y_train
 
 
 mnist_classifier = SimpleNetwork(num_inputs=X_train.shape[1], 
-                                 num_outputs=num_classes, hidden_layers_sizes=[64, 32])
+                                 num_outputs=num_classes, hidden_layers_sizes=[64, 32, 16])
 
 
 # In[18]:
