@@ -10,12 +10,13 @@ import numpy as np
 # In[2]:
 
 
+
 class FullyConnectedLayer(object):
     
     def __init__(self, num_inputs , layer_size , activation_function, derivated_activation_function = None):
         super().__init__()
         
-        self.W = np.random.standard_normal((num_inputs , layer_size))
+        self.W = np.random.standard_normal((num_inputs, layer_size))
         self.b = np.random.standard_normal(layer_size)
         self.size = layer_size
         
@@ -31,7 +32,7 @@ class FullyConnectedLayer(object):
     def forward( self, H_input ):
         z = np.dot(H_input , self.W ) + self.b
         self.out_put = self.activation_function(z)
-        self.H =  H_inputput
+        self.H =  H_input
         return self.out_put
     
     def backward(self, dLoss_dOut):
@@ -48,15 +49,14 @@ class FullyConnectedLayer(object):
         
         dLoss_dH  = np.dot(dLoss_dOin , dOin_dH )
         
-        return dL_dH
+        return dLoss_dH
     
     def optimize(self, epsilon ):
-        self.W = self.W  - epsilon*self.dL_dW
-        self.b = self.b  - epsilon*self.dL_db
+        self.W = self.W  - epsilon*self.dLoss_dW
+        self.b = self.b  - epsilon*self.dLoss_db
         
         
-        
-        
+
     
 
 
@@ -105,7 +105,7 @@ def derivated_cross_entropy(pred , target ):
     
 
 
-# In[11]:
+# In[7]:
 
 
 class SimpleNetwork:
@@ -113,16 +113,19 @@ class SimpleNetwork:
     def __init__(self, num_inputs, num_outputs, hidden_layers_sizes=(64, 32),
                  activation_function=sigmoid, derivated_activation_function=derivated_sigmoid,
                  loss_function=loss_L2, derivated_loss_function=derivated_loss_L2):
-        layer_sizes = [num_inputs , *hidden_layers_sizes , num_outputs]
-        self.layers = [FullyConnectedLayer(layer_sizes[i] , layer_sizes[i+1], activation_function , derivated_activation_function) for i in range(len(layer_sizes)-1)]
-        
+        super().__init__()
+        layer_sizes = [num_inputs, *hidden_layers_sizes, num_outputs]
+        self.layers = [
+            FullyConnectedLayer(layer_sizes[i], layer_sizes[i + 1], activation_function, derivated_activation_function)
+            for i in range(len(layer_sizes) - 1)]
+
         self.loss_function = loss_function
         self.derivated_loss_function = derivated_loss_function
         
     def forward(self , H ):
         for layer in self.layers:
-            x = layer.forward(H)
-        return x 
+            H = layer.forward(H)
+        return H 
     
     
     def backward(self, dLoss_dout):
@@ -148,19 +151,19 @@ class SimpleNetwork:
                 num_corrects += 1
         return num_corrects/len(X_val)
     
-    def train(self, X_train , y_train , X_val = None , y_val = None , 
-             batch_size  = 32 , num_epochs = 5 , learning_rate = 1e-3 , print_frequency = 20  ):
-        
+    def train(self, X_train, y_train, X_val=None, y_val=None, 
+              batch_size=32, num_epochs=5, learning_rate=1e-3, print_frequency=20):
+      
         num_batches_per_epoch  = len(X_train)//batch_size
         do_validation = X_val is not None and y_val is not None
+        losses, accuracies = [], []
         
-        losses , accuracies = [] ,[]
         for i in range(num_epochs):
             epoch_loss  = 0
             for b in range(num_batches_per_epoch):
                 
                 batch_index_begin = b*batch_size
-                batch_index_end = 2*batch_index_begin
+                batch_index_end =  batch_index_begin +  batch_size
                 
                 x = X_train[batch_index_begin : batch_index_end]
                 targets = y_train[batch_index_begin : batch_index_end]
@@ -175,7 +178,7 @@ class SimpleNetwork:
                 epoch_loss += loss
                 
             epoch_loss /= num_batches_per_epoch
-            loss.append(epoch_loss)
+            losses.append(epoch_loss)
             if do_validation:
                 accuracy = self.evaluate_accuracy(X_val, y_val)
                 accuracies.append(accuracy)
@@ -188,9 +191,96 @@ class SimpleNetwork:
                 
         
 
-    
-            
-        
+
+# In[8]:
+
+
+get_ipython().run_line_magic('matplotlib', 'inline')
+# !pip install matplotlib  # Uncomment and run if matplotlib is not installed yet.
+import matplotlib          # We use this package to visualize some data and results
+import matplotlib.pyplot as plt
+import mnist
+
+np.random.seed(42)
+
+
+# In[9]:
+
+
+X_train, y_train = mnist.train_images(), mnist.train_labels()
+X_test,  y_test  = mnist.test_images(), mnist.test_labels()
+num_classes = 10    # classes are the digits from 0 to 9
+
+
+# In[10]:
+
+
+print(X_train.shape)
+print(X_test.shape)
+
+
+# In[11]:
+
+
+img_idx = np.random.randint( 0 , X_test.shape[0])
+plt.imshow(X_test[img_idx] , cmap = matplotlib.cm.binary)
+plt.axis('off')
+plt.show()
+
+
+# In[12]:
+
+
+print(y_test[img_idx])
+
+
+# In[13]:
+
+
+X_train, X_test = X_train.reshape(-1, 28 * 28), X_test.reshape(-1, 28 * 28)
+
+
+# In[14]:
+
+
+X_train, X_test = X_train / 255., X_test / 255.
+print("Normalized pixel values between {} and {}".format(X_train.min(), X_train.max()))
+
+
+# In[15]:
+
+
+y_train = np.eye(num_classes)[y_train]
+
+
+# In[16]:
+
+
+y_train
+
+
+# In[17]:
+
+
+mnist_classifier = SimpleNetwork(num_inputs=X_train.shape[1], 
+                                 num_outputs=num_classes, hidden_layers_sizes=[64, 32])
+
+
+# In[18]:
+
+
+predictions = mnist_classifier.forward(X_train)                         # forward pass
+loss_untrained = mnist_classifier.loss_function(predictions, y_train)   # loss computation
+
+accuracy_untrained = mnist_classifier.evaluate_accuracy(X_test, y_test)  # Accuracy
+print("Untrained : training loss = {:.6f} | val accuracy = {:.2f}%".format(loss_untrained, accuracy_untrained * 100))
+
+
+# In[ ]:
+
+
+losses, accuracies = mnist_classifier.train(X_train, y_train, X_test, y_test, 
+                                            batch_size=30, num_epochs=100)
 
 
 # In[ ]:
